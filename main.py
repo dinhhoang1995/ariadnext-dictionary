@@ -3,6 +3,10 @@ import json
 from typing import List
 
 
+class NumberOfErrorsTooBig(Exception):
+    pass
+
+
 class Dictionary:
     """
     Class Dictionary
@@ -122,12 +126,27 @@ class Dictionary:
         return results
 
     def suggest_misspelled_word(self, word, number_of_errors) -> List[str]:
+        """
+        Suggest words in dictionary that match the misspelled word
+        :param word:
+        :param number_of_errors:
+        :return:
+        """
+        if number_of_errors >= len(word):
+            raise NumberOfErrorsTooBig("Number of errors must be smaller than length of word!")
+
         if self.search(word):
             return [word]
 
         return self.edits(self.root, word, [], number_of_errors)
 
     def validate_word(self, word, number_of_errors) -> bool:
+        """
+        Validate a word with words in dictionary
+        :param word:
+        :param number_of_errors:
+        :return:
+        """
         return True if len(self.suggest_misspelled_word(word, number_of_errors)) else False
 
 
@@ -157,9 +176,6 @@ if __name__ == "__main__":
     # Dictionary with errors
     print("Suggest words in dictionary for 'abe' with 1 error: {}".format(dictionary.suggest_misspelled_word("abe", 1)))
     print("Suggest words in dictionary for 'abc' with 1 error: {}".format(dictionary.suggest_misspelled_word("abc", 1)))
-    print("Suggest words in dictionary for 'a' with 1 error: {}".format(dictionary.suggest_misspelled_word("a", 1)))
-    print("Suggest words in dictionary for 'a' with 2 errors: {}".format(dictionary.suggest_misspelled_word("a", 2)))
-    print("Suggest words in dictionary for 'b' with 1 error: {}".format(dictionary.suggest_misspelled_word("b", 1)))
     print("Suggest words in dictionary for 'bbc' with 1 error: {}".format(dictionary.suggest_misspelled_word("bbc", 1)))
     print("Suggest words in dictionary for 'afc' with 1 error: {}".format(dictionary.suggest_misspelled_word("afc", 1)))
     print("Suggest words in dictionary for 'bbb' with 2 error: {}".format(dictionary.suggest_misspelled_word("bbb", 2)))
@@ -170,3 +186,8 @@ if __name__ == "__main__":
     # Validate word
     print("Is 'abe' with 1 error valid: {}".format(dictionary.validate_word("abe", 1)))
     print("Is 'ace' with 1 error valid: {}".format(dictionary.validate_word("ace", 1)))
+
+    try:
+        print("Is 'ace' with 3 error valid: {}".format(dictionary.validate_word("ace", 3)))
+    except NumberOfErrorsTooBig as e:
+        print(f"Catched NumberOfErrorsTooBig Exception while validating 'ace' with 3 error valid: {e}")
