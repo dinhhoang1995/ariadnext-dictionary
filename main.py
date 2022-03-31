@@ -36,7 +36,7 @@ class Dictionary:
         node = self.root
         for char in word:
             node = node.setdefault(char, {})
-        node.setdefault("_end", "_end")
+        node.setdefault("_end", word)
 
     def search(self, word) -> bool:
         """
@@ -81,6 +81,55 @@ class Dictionary:
         self._walk_dictionary(node, prefix, words)
         return words
 
+    def edits(self, node, word, results, depth) -> List[str]:
+        if len(word) == 0 and depth >= 0 and "_end" in node and node["_end"] not in results:
+            results.append(node["_end"])
+
+        if depth >= 1:
+            # # deletion (remove the current letter and try it on the current branch)
+            # if depth > 1:
+            #     self.edits(node, word[1:], results, depth - 1)
+            # else:
+            #     self.edits(node, "", results, depth - 1)
+
+            for char, branch in node.items():
+                if char == "_end":
+                    continue
+
+                # # insertion (pass the current word to each of the branches)
+                # self.edits(branch, word, results, depth - 1)
+
+                # substitution (pass the current word without the first character to each of the branches)
+                if len(word) > 1:
+                    self.edits(branch, word[1:], results, depth - 1)
+                else:
+                    self.edits(branch, "", results, depth - 1)
+
+            # # transposition (swap the first and second characters)
+            # if len(word) > 2:
+            #     self.edits(node, word[1] + word[0] + word[2:], results, depth - 1)
+            # elif len(word) == 2:
+            #     self.edits(node, word[1] + word[0], results, depth - 1)
+
+        # move on to the next letter (no edits have happened)
+        if len(word) >= 1 and word[0] in node:
+            char = word[0]
+            if len(word) > 1:
+                self.edits(node[char], word[1:], results, depth)
+            elif len(word) == 1:
+                self.edits(node[char], "", results, depth)
+
+        return results
+
+    def suggest_misspelled_word(self, word, number_of_errors) -> List[str]:
+        if self.search(word):
+            return [word]
+
+        return self.edits(self.root, word, [], number_of_errors)
+
+    def validate_word(self, word, number_of_errors) -> bool:
+        return True if len(self.suggest_misspelled_word(word, number_of_errors)) else False
+
 
 if __name__ == "__main__":
     dictionary = Dictionary()
@@ -104,3 +153,20 @@ if __name__ == "__main__":
     print("Words starting with 'b': {}".format(dictionary.list_words_starting_with_prefix("b")))
     print("Words starting with 'c': {}".format(dictionary.list_words_starting_with_prefix("c")))
     print("Words starting with 'd': {}".format(dictionary.list_words_starting_with_prefix("d")))
+
+    # Dictionary with errors
+    print("Suggest words in dictionary for 'abe' with 1 error: {}".format(dictionary.suggest_misspelled_word("abe", 1)))
+    print("Suggest words in dictionary for 'abc' with 1 error: {}".format(dictionary.suggest_misspelled_word("abc", 1)))
+    print("Suggest words in dictionary for 'a' with 1 error: {}".format(dictionary.suggest_misspelled_word("a", 1)))
+    print("Suggest words in dictionary for 'a' with 2 errors: {}".format(dictionary.suggest_misspelled_word("a", 2)))
+    print("Suggest words in dictionary for 'b' with 1 error: {}".format(dictionary.suggest_misspelled_word("b", 1)))
+    print("Suggest words in dictionary for 'bbc' with 1 error: {}".format(dictionary.suggest_misspelled_word("bbc", 1)))
+    print("Suggest words in dictionary for 'afc' with 1 error: {}".format(dictionary.suggest_misspelled_word("afc", 1)))
+    print("Suggest words in dictionary for 'bbb' with 2 error: {}".format(dictionary.suggest_misspelled_word("bbb", 2)))
+    print(
+        "Suggest words in dictionary for 'afed' with 2 error: {}".format(dictionary.suggest_misspelled_word("afed", 2))
+    )
+
+    # Validate word
+    print("Is 'abe' with 1 error valid: {}".format(dictionary.validate_word("abe", 1)))
+    print("Is 'ace' with 1 error valid: {}".format(dictionary.validate_word("ace", 1)))
